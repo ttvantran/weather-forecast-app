@@ -1,136 +1,160 @@
-console.log("hello main.js");
+console.log("Weather Forecast App Initialized");
 
 // API Configuration
-const API_KEY = "09f372b1be5c40f1a3903958261702"; // Your API key
+const API_KEY = "09f372b1be5c40f1a3903958261702";
 
 // DOM Elements
-const citySelect = document.getElementById('city-select');
-const getForecastBtn = document.getElementById('get-forecast-btn');
-const weatherPlaceholder = document.getElementById('weather-info-placeholder');
+const city_select = document.getElementById("city-select");
+const get_btn = document.getElementById("get-forecast-btn");
+const weather_placeholder = document.getElementById("weather-info-placeholder");
+const status_message = document.getElementById("status-message");
 
-// Event listener for button click
-getForecastBtn.addEventListener('click', handleForecastRequest);
-
-// Generate dynamic forecast API URL (using forecast endpoint, not current)
-function generateWeatherApiUrl(city, apiKey) {
-    // Using forecast.json endpoint with 3 days forecast
-    return `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${city}&days=3&aqi=no&alerts=no`;
+// Generate forecast API URL (forecast endpoint)
+function generate_weather_api_url(city, api_key) {
+  const encoded_city = encodeURIComponent(city);
+  return `https://api.weatherapi.com/v1/forecast.json?key=${api_key}&q=${encoded_city}&days=3&aqi=no&alerts=no`;
 }
 
-// Main function to handle forecast request
-async function handleForecastRequest() {
-    const selectedCity = citySelect.value;
-    
-    // Validate city selection
-    if (!selectedCity) {
-        weatherPlaceholder.innerHTML = '<p class="placeholder-text" style="color: #e74c3c;">⚠️ Please select a city first!</p>';
-        return;
-    }
+// Handle click
+get_btn.addEventListener("click", async () => {
+  const selected_city = city_select.value.trim();
 
-    // Show loading state
-    weatherPlaceholder.innerHTML = '<p class="placeholder-text">Loading weather data... ⏳</p>';
+  if (!selected_city) {
+    status_message.textContent = "⚠️ Please select a city first.";
+    weather_placeholder.innerHTML = `<p class="message error">⚠️ Please select a city above.</p>`;
+    return;
+  }
 
-    try {
-        // Generate URL and fetch data
-        const url = generateWeatherApiUrl(selectedCity, API_KEY);
-        await getWeatherDetails(url);
-    } catch (error) {
-        weatherPlaceholder.innerHTML = '<p class="placeholder-text" style="color: #e74c3c;">❌ Failed to load weather data. Please try again.</p>';
-        console.error('Error:', error);
-    }
+  status_message.textContent = "Loading weather data... ⏳";
+  weather_placeholder.innerHTML = `<p class="message loading">Loading weather data... ⏳</p>`;
+
+  try {
+    const url = generate_weather_api_url(selected_city, API_KEY);
+    const data = await get_weather_details(url);
+    display_weather_info(data);
+    status_message.textContent = "✅ Weather updated.";
+  } catch (error) {
+    console.error(error);
+    status_message.textContent = "❌ Failed to load weather data.";
+    weather_placeholder.innerHTML = `<p class="message error">❌ Failed to load weather data. Please try again.</p>`;
+  }
+});
+
+// Fetch data
+async function get_weather_details(url) {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`request failed (${response.status})`);
+  }
+
+  const json = await response.json();
+
+  if (json.error) {
+    throw new Error(json.error.message);
+  }
+
+  return json;
 }
 
-// Function to get weather details from the forecast API
-async function getWeatherDetails(url) {
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-        throw new Error('API request failed');
-    }
-    
-    const jsonResponse = await response.json();
+// Render UI (Fix B: current left, forecast right with horizontal scroll)
+function display_weather_info(json) {
+  const { name, country, localtime } = json.location;
 
-    // Extract values from API response
-    const { name, country } = jsonResponse.location;
-    const { temp_c, condition, humidity, wind_kph, feelslike_c, uv } = jsonResponse.current;
-    const { icon, text } = condition;
-    const forecastDays = jsonResponse.forecast.forecastday;
+  const current = json.current;
+  const { temp_c, condition, humidity, wind_kph, feelslike_c, uv, pressure_mb, vis_km, wind_dir } = current;
 
-    // Display weather information
-    displayWeatherInfo(name, country, temp_c, icon, text, humidity, wind_kph, feelslike_c, uv, forecastDays);
-}
+  const icon_url = condition.icon.startsWith("//") ? `https:${condition.icon}` : `https:${condition.icon}`;
+  const forecast_days = json.forecast.forecastday;
 
-// Display complete weather information (current + forecast)
-function displayWeatherInfo(name, country, temp_c, icon, text, humidity, wind_kph, feelslike_c, uv, forecastDays) {
-    // Build current weather HTML
-    let htmlContent = `
-        <div class="current-weather">
-            <h2>Current Weather</h2>
-            <div class="location-info">📍 ${name}, ${country}</div>
-            
-            <div class="weather-main">
-                <div class="weather-icon">
-                    <img src="https:${icon}" alt="${text}">
-                </div>
-                <div class="weather-temp">
-                    <div class="temp-large">${Math.round(temp_c)}°C</div>
-                    <div class="condition-text">${text}</div>
-                </div>
-            </div>
+  let html = `
+    <div class="weather-layout">
+      <div class="current-weather">
+        <h2>Current Weather</h2>
+        <div class="location-info">📍 ${name}, ${country}</div>
+        <div class="localtime">Local time: ${localtime}</div>
 
-            <div class="weather-details">
-                <div class="detail-item">
-                    <div class="detail-label">Feels Like</div>
-                    <div class="detail-value">${Math.round(feelslike_c)}°C</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">Humidity</div>
-                    <div class="detail-value">${humidity}%</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">Wind</div>
-                    <div class="detail-value">${wind_kph} km/h</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">UV Index</div>
-                    <div class="detail-value">${uv}</div>
-                </div>
-            </div>
+        <div class="weather-main">
+          <div class="weather-icon">
+            <img src="${icon_url}" alt="${condition.text}">
+          </div>
+
+          <div class="weather-temp">
+            <div class="temp-large">${Math.round(temp_c)}°C</div>
+            <div class="condition-text">${condition.text}</div>
+          </div>
         </div>
-    `;
 
-    // Build forecast section header
-    htmlContent += `
-        <div class="forecast-section">
-            <h3>3-Day Forecast</h3>
-            <div class="forecast-cards">
-    `;
+        <div class="weather-details">
+          <div class="detail-item">
+            <div class="detail-label">Feels like</div>
+            <div class="detail-value">${Math.round(feelslike_c)}°C</div>
+          </div>
 
-    // Loop through forecast days and create cards
-    forecastDays.forEach(day => {
-        const date = new Date(day.date);
-        const dayName = date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-        
-        htmlContent += `
-            <article class="forecast-card">
-                <div class="forecast-date">${dayName}</div>
-                <div class="weather-icon">
-                    <img src="https:${day.day.condition.icon}" alt="${day.day.condition.text}">
-                </div>
-                <div class="forecast-temps">
-                    ${Math.round(day.day.maxtemp_c)}° / ${Math.round(day.day.mintemp_c)}°
-                </div>
-                <div class="forecast-condition">${day.day.condition.text}</div>
-            </article>
-        `;
+          <div class="detail-item">
+            <div class="detail-label">Humidity</div>
+            <div class="detail-value">${humidity}%</div>
+          </div>
+
+          <div class="detail-item">
+            <div class="detail-label">Wind</div>
+            <div class="detail-value">${wind_kph} kph ${wind_dir}</div>
+          </div>
+
+          <div class="detail-item">
+            <div class="detail-label">UV Index</div>
+            <div class="detail-value">${uv}</div>
+          </div>
+
+          <div class="detail-item">
+            <div class="detail-label">Pressure</div>
+            <div class="detail-value">${pressure_mb} mb</div>
+          </div>
+
+          <div class="detail-item">
+            <div class="detail-label">Visibility</div>
+            <div class="detail-value">${vis_km} km</div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="forecast-panel">
+        <h3>📅 3-Day Forecast</h3>
+        <div class="forecast-cards">
+  `;
+
+  forecast_days.forEach((day) => {
+    const date = new Date(day.date);
+    const day_name = date.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "short",
+      day: "numeric",
     });
 
-    // Close forecast section
-    htmlContent += `
-            </div>
-        </div>
-    `;
+    const day_icon = day.day.condition.icon.startsWith("//")
+      ? `https:${day.day.condition.icon}`
+      : `https:${day.day.condition.icon}`;
 
-    // Update the placeholder with complete HTML
-    weatherPlaceholder.innerHTML = htmlContent;
+    html += `
+      <article class="forecast-card">
+        <div class="forecast-date">${day_name}</div>
+        <div class="weather-icon">
+          <img src="${day_icon}" alt="${day.day.condition.text}">
+        </div>
+        <div class="forecast-temps">
+          <span class="max-temp">${Math.round(day.day.maxtemp_c)}°</span> /
+          <span class="min-temp">${Math.round(day.day.mintemp_c)}°</span>
+        </div>
+        <div class="forecast-condition">${day.day.condition.text}</div>
+      </article>
+    `;
+  });
+
+  html += `
+        </div>
+      </aside>
+    </div>
+  `;
+
+  weather_placeholder.innerHTML = html;
 }
