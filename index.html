@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Forecast App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Header section with semantic HTML5 tags -->
+    <header>
+        <h1>🌦️ Weather Forecast</h1>
+        <p>Get a 3-day weather forecast for your favorite cities</p>
+    </header>
+
+    <!-- Main content area -->
+    <main>
+        <!-- Location selection card -->
+        <section class="selection-section">
+            <label for="city-select">Choose a City:</label>
+            <select id="city-select">
+                <option value="">-- Select a location --</option>
+                <option value="Toronto">Toronto, Canada</option>
+                <option value="Vancouver">Vancouver, Canada</option>
+                <option value="New York">New York, USA</option>
+                <option value="Tokyo">Tokyo, Japan</option>
+            </select>
+            <button id="get-forecast-btn">Get Weather</button>
+        </section>
+
+        <!-- Weather display area with placeholder -->
+        <section id="weather-info-placeholder" class="weather-display">
+            <p class="placeholder-text">Select a city above to view weather forecast 🌍</p>
+        </section>
+    </main>
+
+    <!-- Footer with attribution -->
+    <footer>
+        <p>Data provided by <a href="https://www.weatherapi.com/" target="_blank" rel="noopener">WeatherAPI.com</a></p>
+    </footer>
+
+    <!-- JavaScript file -->
+    <script src="main.js"></script>
+</body>
+</html>
